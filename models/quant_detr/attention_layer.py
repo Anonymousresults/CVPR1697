@@ -30,8 +30,6 @@ class DistributionAlignment(nn.Module):
             self.bias.data.copy_(torch.zeros(1, 1, 1, self.head_dim))
             self.scale.data.copy_(torch.ones(1, 1, 1, self.head_dim))
             self.init_state.fill_(1)
-
-
         out = (x - x.mean(-1,keepdim=True))/torch.sqrt(x.var(dim=-1, keepdim=True) + 1e-5)
         out = self.scale.expand_as(x) * x + self.bias.expand_as(x)
         return out
