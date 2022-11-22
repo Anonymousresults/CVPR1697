@@ -27,15 +27,11 @@ class DistributionAlignment(nn.Module):
 
     def forward(self, x):
         if self.training and self.init_state == 0:
-            # self.alpha.data.copy_(self.weight.abs().max() / 2 ** (self.nbits - 1))
             self.bias.data.copy_(torch.zeros(1, 1, 1, self.head_dim))
             self.scale.data.copy_(torch.ones(1, 1, 1, self.head_dim))
-            # self.alpha.data.copy_(self.weight.abs().max() * 2)
             self.init_state.fill_(1)
 
-        #print(self.scale)
-        #print(self.bias)
-        # print(x.shape, x.mean(-1,keepdim=True).shape, x.var(dim=-1, keepdim=True).shape)
+
         out = (x - x.mean(-1,keepdim=True))/torch.sqrt(x.var(dim=-1, keepdim=True) + 1e-5)
         out = self.scale.expand_as(x) * x + self.bias.expand_as(x)
         return out
@@ -149,7 +145,6 @@ def multi_head_attention_forward(query: Tensor,
     assert head_dim * num_heads == embed_dim, "embed_dim must be divisible by num_heads"
     scaling = float(head_dim) ** -0.5
 
-    #print(use_separate_proj_weight)
     if not use_separate_proj_weight:
         if torch.equal(query, key) and torch.equal(key, value):
             # self-attention
@@ -214,7 +209,6 @@ def multi_head_attention_forward(query: Tensor,
                 _b = _b[_start:]
             v = F.linear(value, _w, _b)
     else:
-        #print(2222222)
         q_proj_weight_non_opt = torch.jit._unwrap_optional(q_proj_weight)
         len1, len2 = q_proj_weight_non_opt.size()
         assert len1 == embed_dim and len2 == query.size(-1)
@@ -426,7 +420,6 @@ class QuantMultiheadAttention(nn.Module):
             self.register_parameter('k_proj_weight', None)
             self.register_parameter('v_proj_weight', None)
 
-        #print(self.in_proj_weight)
 
         if bias:
             self.in_proj_bias = self.in_proj.bias
@@ -470,7 +463,6 @@ class QuantMultiheadAttention(nn.Module):
     def forward(self, query, key, value, key_padding_mask=None,
                 need_weights=True, attn_mask=None):
         # type: (Tensor, Tensor, Tensor, Optional[Tensor], bool, Optional[Tensor]) -> Tuple[Tensor, Optional[Tensor]]
-        #print('self._qkv_same_embed_dim', self._qkv_same_embed_dim)
         return multi_head_attention_forward(
             query, key, value, 
             self.q_act, self.k_act, self.v_act, self.attn_act,
